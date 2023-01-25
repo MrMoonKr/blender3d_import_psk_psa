@@ -82,47 +82,59 @@ import time
 # from math import *
 
 
-def util_obj_link(context, obj):
+def util_obj_link( context, obj ):
+    '''
+        컬렉션의 오브젝트 목록에 등록
+    '''
     # return bpy.context.scene_collection.objects.link(obj)
     # bpy.context.view_layer.collections[0].collection.objects.link(obj)
     # return bpy.context.collection.objects.link(obj)
     # bpy.data.scenes[0].collection.objects.link(obj)
-    context.collection.objects.link(obj)
+    context.collection.objects.link( obj )
 
-def util_obj_select(context, obj, action = 'SELECT'):
+def util_obj_select( context, obj, action = 'SELECT' ):
+    '''
+        오브젝트 선택
+    '''
     # if obj.name in bpy.data.scenes[0].view_layers[0].objects:
     if obj.name in context.view_layer.objects:
-        return obj.select_set(action == 'SELECT')
+        return obj.select_set( action == 'SELECT' )
     else:
         print('Warning: util_obj_select: Object not in "context.view_layer.objects"')
 
-def util_obj_set_active(context, obj):
+def util_obj_set_active( context, obj ):
     # bpy.context.view_layer.objects.active = obj
     # bpy.data.scenes[0].view_layers[0].objects.active = obj
     context.view_layer.objects.active = obj
 
-def util_get_scene(context):
+def util_get_scene( context ):
     return context.scene
 
-def get_uv_layers(mesh_obj):
+def get_uv_layers( mesh_obj ):
     return mesh_obj.uv_layers
     
-def obj_select_get(obj):
+def obj_select_get( obj ):
     return obj.select_get()
 
 
 def utils_set_mode(mode):
     if bpy.ops.object.mode_set.poll():
-        bpy.ops.object.mode_set(mode = mode, toggle = False)
+        bpy.ops.object.mode_set( mode = mode, toggle = False )
     # else:
         # bpy.ops.object.mode_set(mode = mode, toggle = False)
         #dev
 
 # since names have type ANSICHAR(signed char) - using cp1251(or 'ASCII'?)
-def util_bytes_to_str(in_bytes):
-    return in_bytes.rstrip(b'\x00').decode(encoding = 'cp1252', errors = 'replace')
+def util_bytes_to_str( in_bytes: bytes ) -> str:
+    '''
+        bytes to string
+    '''
+    return in_bytes.rstrip( b'\x00' ).decode( encoding = 'cp1252', errors = 'replace' )
 
 class class_psk_bone:
+    '''
+        psk bone data
+    '''
     name = ""
     
     parent = None
@@ -164,13 +176,18 @@ def util_ui_show_msg(msg):
         
         
 PSKPSA_FILE_HEADER = {
+    '''
+        chunk id ( 20 bytes )
+    '''
     'psk':b'ACTRHEAD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     'psa':b'ANIMHEAD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 }
 
 
 def util_is_header_valid(filename, file_ext, chunk_id, error_callback):
-    '''Return True if chunk_id is a valid psk/psa (file_ext) 'magick number'.'''
+    '''
+        Return True if chunk_id is a valid psk/psa (file_ext) 'magick number'.
+    '''
     if chunk_id != PSKPSA_FILE_HEADER[file_ext]:
         error_callback(
             "File %s is not a %s file. (header mismach)\nExpected: %s \nPresent %s"  % ( 
@@ -368,8 +385,11 @@ def pskimport( filepath,
      
     if not context:
         context = bpy.context
+        
     #================================================================================================== 
-    # Materials   MaterialNameRaw | TextureIndex | PolyFlags | AuxMaterial | AuxFlags |  LodBias | LodStyle 
+    # Materials   
+    # MaterialNameRaw | TextureIndex | PolyFlags | AuxMaterial | AuxFlags |  LodBias | LodStyle 
+    # 64              | 4            | 4         | 4           | 4        | 4        | 4
     # Only Name is usable.
     def read_materials():
     
@@ -377,9 +397,9 @@ def pskimport( filepath,
         
         Materials = []
         
-        for counter in range(chunk_datacount):
+        for counter in range( chunk_datacount ):
 
-            (MaterialNameRaw,) = unpack_from('64s24x', chunk_data, chunk_datasize * counter)
+            ( MaterialNameRaw, ) = unpack_from( '64s24x', chunk_data, chunk_datasize * counter )
             
             Materials.append( util_bytes_to_str( MaterialNameRaw ) )
             
@@ -435,6 +455,9 @@ def pskimport( filepath,
     #==================================================================================================
     # Vertices X | Y | Z
     def read_vertices():
+        '''
+            'PNTS0000' chunk
+        '''
         
         if not bImportmesh:
             return True
@@ -447,13 +470,13 @@ def pskimport( filepath,
         
         if bScaleDown:
             for counter in range( chunk_datacount ):
-                (vec_x, vec_y, vec_z) = unpack_data(chunk_data, counter * chunk_datasize)
-                Vertices[counter]  = (vec_x*0.01, vec_y*0.01, vec_z*0.01)
+                ( vec_x, vec_y, vec_z ) = unpack_data( chunk_data, counter * chunk_datasize )
+                Vertices[counter]  = ( vec_x * 0.01, vec_y * 0.01, vec_z * 0.01 )
                 # equal to gltf
                 # Vertices[counter]  = (vec_x*0.01, vec_z*0.01, -vec_y*0.01)
         else:
             for counter in range( chunk_datacount ):
-                Vertices[counter]  =  unpack_data(chunk_data, counter * chunk_datasize)
+                Vertices[counter]  =  unpack_data( chunk_data, counter * chunk_datasize )
             
             
     #================================================================================================== 
@@ -470,9 +493,7 @@ def pskimport( filepath,
         unpack_data = Struct('=IffBxxx').unpack_from
         
         for counter in range( chunk_datacount ):
-            (vertex_id,
-             u, v,
-             material_index) = unpack_data( chunk_data, counter * chunk_datasize )
+            ( vertex_id, u, v, material_index ) = unpack_data( chunk_data, counter * chunk_datasize )
              
             # print(vertex_id, u, v, material_index)
             # Wedges[counter] = (vertex_id, u, v, material_index)
@@ -496,7 +517,7 @@ def pskimport( filepath,
         Bones = [None] * chunk_datacount
         
         for counter in range( chunk_datacount ):
-            Bones[counter] = unpack_data( chunk_data, chunk_datasize * counter)
+            Bones[counter] = unpack_data( chunk_data, chunk_datasize * counter )
           
     
     #================================================================================================== 
@@ -576,47 +597,42 @@ def pskimport( filepath,
     #===================================================================================================
     # File. Read all needed data.
     #         VChunkHeader Struct
+    # Total 32 bytes
     # ChunkID|TypeFlag|DataSize|DataCount
-    # 0      |1       |2       |3
+    # 20     |4       |4       |4
     
     while True:
     
         header_bytes = file.read( 32 )
-        
-        if len(header_bytes) < 32:
-            
-            if len(header_bytes) != 0:
-                error_callback("Unexpected end of file.(%s/32 bytes)" % len(header_bytes))
+        if len( header_bytes ) < 32:
+            if len( header_bytes ) != 0:
+                error_callback( "Unexpected end of file.(%s/32 bytes)" % len(header_bytes) )
             break
             
-        (chunk_id, chunk_type, chunk_datasize, chunk_datacount) = unpack('20s3i', header_bytes)
+        ( chunk_id, chunk_type, chunk_datasize, chunk_datacount ) = unpack( '20s3i', header_bytes )
         
-        chunk_id_str = util_bytes_to_str(chunk_id)
+        chunk_id_str = util_bytes_to_str( chunk_id )
         chunk_id_str = chunk_id_str[:8]
         
         if chunk_id_str in CHUNKS_HANDLERS:
-        
-            chunk_data = file.read( chunk_datasize * chunk_datacount)
-            
-            if len(chunk_data) < chunk_datasize * chunk_datacount:
-                error_callback('Psk chunk %s is broken.' % chunk_id_str)
+            chunk_data = file.read( chunk_datasize * chunk_datacount )
+            if len( chunk_data ) < chunk_datasize * chunk_datacount:
+                error_callback( 'Psk chunk %s is broken.' % chunk_id_str )
                 return False
                 
             CHUNKS_HANDLERS[chunk_id_str]()
             
         else:
-        
-            print('Unknown chunk: ', chunk_id_str)
-            file.seek(chunk_datasize * chunk_datacount, 1)
+            print( 'Unknown chunk : ', chunk_id_str )
+            file.seek( chunk_datasize * chunk_datacount, 1 ) # just skip
             
-            
-        # print(chunk_id_str, chunk_datacount)
+        # print( chunk_id_str, chunk_datacount )
             
     file.close()
          
-    print(" Importing file:", filepath)
+    print( " Importing file:", filepath )
     
-    if not bImportmesh and (Bones is None or len(Bones) == 0):
+    if not bImportmesh and ( Bones is None or len( Bones ) == 0 ):
         error_callback("Psk: no skeleton data.")
         return False
 
@@ -624,17 +640,17 @@ def pskimport( filepath,
     NAME_UV_PREFIX = "UV"
     
     # file name w/out extension
-    gen_name_part = util_gen_name_part(filepath)
+    gen_name_part = util_gen_name_part( filepath )
     gen_names = {
         'armature_object':  gen_name_part + '.ao',
         'armature_data':    gen_name_part + '.ad',
-            'mesh_object':  gen_name_part + '.mo',
-            'mesh_data':    gen_name_part + '.md'
+        'mesh_object':      gen_name_part + '.mo',
+        'mesh_data':        gen_name_part + '.md'
     }
     
     if bImportmesh:
-        mesh_data = bpy.data.meshes.new(gen_names['mesh_data'])
-        mesh_obj = bpy.data.objects.new(gen_names['mesh_object'], mesh_data)
+        mesh_data = bpy.data.meshes.new( gen_names['mesh_data'] )
+        mesh_obj = bpy.data.objects.new( gen_names['mesh_object'], mesh_data )
         
     
     #==================================================================================================
@@ -700,10 +716,10 @@ def pskimport( filepath,
 
     #==================================================================================================
     # Prepare bone data
-    def init_psk_bone(i, psk_bones, name_raw):
+    def init_psk_bone( i, psk_bones, name_raw ):
         psk_bone = class_psk_bone()
         psk_bone.children = []
-        psk_bone.name = util_bytes_to_str(name_raw)
+        psk_bone.name = util_bytes_to_str( name_raw )
         psk_bones[i] = psk_bone
         return psk_bone
 
@@ -730,13 +746,13 @@ def pskimport( filepath,
             #  scale_x, scale_y, scale_z
              ) in enumerate(Bones):
         
-            psk_bone = init_psk_bone(counter, psk_bones, name_raw)
+            psk_bone = init_psk_bone( counter, psk_bones, name_raw )
             
             psk_bone.bone_index = counter
             psk_bone.parent_index = ParentIndex
             
             # Tested. 64 is getting cut to 63
-            if len(psk_bone.name) > 63:
+            if len( psk_bone.name ) > 63:
                 psk_bone_name_toolong = True
                 # print('Warning. Bone name is too long:', psk_bone.name)
 
@@ -749,20 +765,22 @@ def pskimport( filepath,
             # print("%s:" % (psk_bone.name), vec_x, quat_x)
 
             # store bind pose to make it available for psa-import via CustomProperty of the Blender bone
-            psk_bone.orig_quat = Quaternion((quat_w, quat_x, quat_y, quat_z))
+            psk_bone.orig_quat = Quaternion( ( quat_w, quat_x, quat_y, quat_z ) )
 
             if bScaleDown:
-                psk_bone.orig_loc = Vector((vec_x * 0.01, vec_y * 0.01, vec_z * 0.01))
+                psk_bone.orig_loc = Vector( ( vec_x * 0.01, vec_y * 0.01, vec_z * 0.01 ) )
             else:
-                psk_bone.orig_loc = Vector((vec_x, vec_y, vec_z))
+                psk_bone.orig_loc = Vector( ( vec_x, vec_y, vec_z ) )
 
             # root bone must have parent_index = 0 and selfindex = 0
             if psk_bone.parent_index == 0 and psk_bone.bone_index == psk_bone.parent_index:
+                
                 if bDontInvertRoot:
                     psk_bone.mat_world_rot = psk_bone.orig_quat.to_matrix()
                 else:
                     psk_bone.mat_world_rot = psk_bone.orig_quat.conjugated().to_matrix()
-                psk_bone.mat_world = Matrix.Translation(psk_bone.orig_loc)
+                    
+                psk_bone.mat_world = Matrix.Translation( psk_bone.orig_loc )
 
             sum_bone_pos += psk_bone.orig_loc.length
             
@@ -782,7 +800,7 @@ def pskimport( filepath,
             
             psk_bone.parent = parent
             
-            parent.children.append(psk_bone)
+            parent.children.append( psk_bone )
             
             # mat_world -     world space bone matrix WITHOUT own rotation
             # mat_world_rot - world space bone rotation WITH own rotation
@@ -810,28 +828,28 @@ def pskimport( filepath,
     #==================================================================================================
     # Skeleton. Prepare.
             
-        armature_data = bpy.data.armatures.new(gen_names['armature_data'])
-        armature_obj = bpy.data.objects.new(gen_names['armature_object'], armature_data)
+        armature_data = bpy.data.armatures.new( gen_names['armature_data'] )
+        armature_obj = bpy.data.objects.new( gen_names['armature_object'], armature_data )
         # TODO: options for axes and x_ray?
         armature_data.show_axes = False
 
         armature_data.display_type = 'STICK'
         armature_obj.show_in_front = True
 
-        util_obj_link(context, armature_obj)
+        util_obj_link( context, armature_obj )
 
-        util_select_all(False)
-        util_obj_select(context, armature_obj)
-        util_obj_set_active(context, armature_obj)
+        util_select_all( False )
+        util_obj_select( context, armature_obj )
+        util_obj_set_active( context, armature_obj )
         
-        utils_set_mode('EDIT')
+        utils_set_mode( 'EDIT' )
         
         
-        sum_bone_pos /= len(Bones) # average
+        sum_bone_pos /= len( Bones ) # average
         sum_bone_pos *= fBonesizeRatio # corrected
         
         # bone_size_choosen = max(0.01, round((min(sum_bone_pos, fBonesize))))
-        bone_size_choosen = max(0.01, round((min(sum_bone_pos, fBonesize))*100)/100)
+        bone_size_choosen = max( 0.01, round((min(sum_bone_pos, fBonesize))*100)/100 )
         # bone_size_choosen = max(0.01, min(sum_bone_pos, fBonesize))
         # print("Bonesize %f | old: %f round: %f" % (bone_size_choosen, max(0.01, min(sum_bone_pos, fBonesize)),max(0.01, round((min(sum_bone_pos, fBonesize))*100)/100)))
 
@@ -847,8 +865,8 @@ def pskimport( filepath,
                 # TODO too long name cutting options?
                 orig_long_name = psk_bone.name
 
-                # Blender will cut the name here (>63 chars)
-                edit_bone = armature_obj.data.edit_bones.new(psk_bone.name)
+                # Blender will cut the name here ( >63 chars )
+                edit_bone = armature_obj.data.edit_bones.new( psk_bone.name )
                 edit_bone["orig_long_name"] = orig_long_name
 
                 # if orig_long_name != edit_bone.name:
@@ -861,7 +879,7 @@ def pskimport( filepath,
 
         else:
             for psk_bone in psk_bones:
-                edit_bone = armature_obj.data.edit_bones.new(psk_bone.name)
+                edit_bone = armature_obj.data.edit_bones.new( psk_bone.name )
                 psk_bone.name = edit_bone.name
 
         for psk_bone in psk_bones:
@@ -886,7 +904,7 @@ def pskimport( filepath,
                 post_quat = psk_bone.orig_quat.conjugated()
             
             # only length of this vector is matter?
-            edit_bone.tail = Vector(( 0.0, new_bone_size, 0.0))
+            edit_bone.tail = Vector( ( 0.0, new_bone_size, 0.0 ) )
 
             # @
             # edit_bone.matrix = psk_bone.mat_world * post_quat.to_matrix().to_4x4()
@@ -943,13 +961,13 @@ def pskimport( filepath,
                 if (psk_bone.orig_loc - orig_loc).length > 0.02:
                     print(bone.name, psk_bone.orig_loc, orig_loc, (psk_bone.orig_loc - orig_loc).length)
             '''
-    utils_set_mode('OBJECT')
+    utils_set_mode( 'OBJECT' )
          
     #==================================================================================================
     # Weights
     if bImportmesh: 
     
-        vertices_total = len(Vertices)
+        vertices_total = len( Vertices )
         
         for ( _, PointIndex, BoneIndex ) in Weights:
             if PointIndex < vertices_total: # can it be not?
@@ -1041,14 +1059,14 @@ def pskimport( filepath,
     #================================================================================================== 
     # Mesh. Build.
     
-        mesh_data.from_pydata(Vertices,[],Faces)
+        mesh_data.from_pydata( Vertices, [], Faces )
 
     #==================================================================================================
     # Vertex Normal. Set.
 
         if Normals is not None:
-            mesh_data.polygons.foreach_set("use_smooth", [True] * len(mesh_data.polygons))
-            mesh_data.normals_split_custom_set_from_vertices(Normals)
+            mesh_data.polygons.foreach_set( "use_smooth", [True] * len( mesh_data.polygons ) )
+            mesh_data.normals_split_custom_set_from_vertices( Normals )
             mesh_data.use_auto_smooth = True
                 
     #===================================================================================================
@@ -1162,21 +1180,21 @@ def pskimport( filepath,
     
     if bImportbone:
     
-        bone_group_unused = armature_obj.pose.bone_groups.new(name = "Unused bones")
+        bone_group_unused = armature_obj.pose.bone_groups.new( name = "Unused bones" )
         bone_group_unused.color_set = 'THEME14'
 
-        bone_group_nochild = armature_obj.pose.bone_groups.new(name = "No children")
+        bone_group_nochild = armature_obj.pose.bone_groups.new( name = "No children" )
         bone_group_nochild.color_set = 'THEME03'
 
         armature_data.show_group_colors = True
 
         for psk_bone in psk_bones:
         
-            pose_bone = armature_obj.pose.bones[psk_bone.name]
+            pose_bone = armature_obj.pose.bones[ psk_bone.name ]
             
             if psk_bone.have_weight_data:
             
-                if len(psk_bone.children) == 0:
+                if len( psk_bone.children ) == 0:
                     pose_bone.bone_group = bone_group_nochild
                     
             else:
