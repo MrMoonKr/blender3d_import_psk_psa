@@ -176,9 +176,6 @@ def util_ui_show_msg(msg):
         
         
 PSKPSA_FILE_HEADER = {
-    '''
-        chunk id ( 20 bytes )
-    '''
     'psk':b'ACTRHEAD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     'psa':b'ANIMHEAD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 }
